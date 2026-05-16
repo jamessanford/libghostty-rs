@@ -342,7 +342,7 @@ impl Snapshot<'_, '_> {
 
     fn set<T>(&self, tag: ffi::RenderStateOption::Type, value: &T) -> Result<()> {
         let result = unsafe {
-            ffi::ghostty_render_state_set(self.0.0.as_raw(), tag, std::ptr::from_ref(&value).cast())
+            ffi::ghostty_render_state_set(self.0.0.as_raw(), tag, std::ptr::from_ref(value).cast())
         };
         // Since we manually model every possible query, this should never fail.
         from_result(result)
@@ -524,7 +524,7 @@ impl RowIteration<'_, '_> {
             ffi::ghostty_render_state_row_set(
                 self.iter.0.as_raw(),
                 tag,
-                std::ptr::from_ref(&value).cast(),
+                std::ptr::from_ref(value).cast(),
             )
         };
         from_result(result)
