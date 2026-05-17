@@ -33,6 +33,11 @@ pub struct FormatterOptions<'t> {
     ///
     /// If `None`, the entire screen is formatted.
     pub selection: Option<Selection<'t>>,
+    /// Extra terminal state to emit (modes, scrolling region, cursor, etc.).
+    ///
+    /// All fields default to `false` (no extras). Use `ffi::sized!(ffi::FormatterTerminalExtra)`
+    /// as a base and set the desired flags.
+    pub extra: ffi::FormatterTerminalExtra,
 }
 
 impl<'t, 'alloc: 'cb, 'cb: 't> Formatter<'t, 'alloc, 'cb> {
@@ -61,17 +66,16 @@ impl<'t, 'alloc: 'cb, 'cb: 't> Formatter<'t, 'alloc, 'cb> {
         opts: FormatterOptions,
     ) -> Result<Self> {
         let mut raw: ffi::Formatter = std::ptr::null_mut();
-        let selection = opts.selection.map(Into::into);
+        // Keep `selection` alive until after the C call; taking `&raw const s`
+        // inside a match arm produces a dangling pointer once the arm exits.
+        let selection: Option<ffi::Selection> = opts.selection.map(Into::into);
 
         let opts = ffi::FormatterTerminalOptions {
             emit: opts.format.into(),
             trim: opts.trim,
-            extra: ffi::FormatterTerminalExtra::default(),
+            extra: opts.extra,
             unwrap: opts.unwrap,
-            selection: match selection {
-                Some(s) => &raw const s,
-                None => std::ptr::null(),
-            },
+            selection: selection.as_ref().map_or(std::ptr::null(), |s| s as *const ffi::Selection),
             ..ffi::sized!(ffi::FormatterTerminalOptions)
         };
 
