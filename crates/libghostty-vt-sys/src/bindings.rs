@@ -1696,6 +1696,8 @@ pub struct FormatterScreenExtra {
     pub kitty_keyboard: bool,
     #[doc = " Emit character set designations and invocations."]
     pub charsets: bool,
+    #[doc = " Emit saved cursor state using DECSC (ESC 7)."]
+    pub saved_cursor: bool,
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
@@ -1715,6 +1717,8 @@ const _: () = {
         [::std::mem::offset_of!(FormatterScreenExtra, kitty_keyboard) - 12usize];
     ["Offset of field: FormatterScreenExtra::charsets"]
         [::std::mem::offset_of!(FormatterScreenExtra, charsets) - 13usize];
+    ["Offset of field: FormatterScreenExtra::saved_cursor"]
+        [::std::mem::offset_of!(FormatterScreenExtra, saved_cursor) - 14usize];
 };
 #[doc = " Extra terminal state to include in styled output.\n"]
 #[repr(C)]

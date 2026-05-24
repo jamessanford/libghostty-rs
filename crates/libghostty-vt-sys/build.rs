@@ -6,6 +6,11 @@ use std::process::Command;
 const GHOSTTY_REPO: &str = "https://github.com/ghostty-org/ghostty.git";
 const GHOSTTY_COMMIT: &str = "6590196661f769dd8f2b3e85d6c98262c4ec5b3b";
 
+/// Relative path from this crate's Cargo.toml to a local ghostty checkout.
+/// When this directory exists and contains build.zig, use it instead of
+/// fetching the pinned commit. Set GHOSTTY_SOURCE_DIR to override.
+const LOCAL_GHOSTTY_RELPATH: &str = "../../../ghostty";
+
 #[derive(Clone, Copy)]
 enum LinkMode {
     Dynamic,
@@ -101,7 +106,7 @@ fn build_vendored(link_mode: LinkMode) {
     let target = env::var("TARGET").expect("TARGET must be set");
     let host = env::var("HOST").expect("HOST must be set");
 
-    // Locate ghostty source: env override > fetch into OUT_DIR.
+    // Locate ghostty source: env override > local checkout > fetch into OUT_DIR.
     let ghostty_dir = match env::var("GHOSTTY_SOURCE_DIR") {
         Ok(dir) => {
             let p = PathBuf::from(dir);
@@ -112,7 +117,16 @@ fn build_vendored(link_mode: LinkMode) {
             );
             p
         }
-        Err(_) => fetch_ghostty(&out_dir),
+        Err(_) => {
+            let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+            let local = manifest_dir.join(LOCAL_GHOSTTY_RELPATH);
+            if local.join("build.zig").exists() {
+                eprintln!("Using local ghostty checkout: {}", local.display());
+                local
+            } else {
+                fetch_ghostty(&out_dir)
+            }
+        }
     };
 
     // Build libghostty-vt via zig.
