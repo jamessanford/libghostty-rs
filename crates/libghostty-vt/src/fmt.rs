@@ -9,7 +9,7 @@ use crate::{
     alloc::{Allocator, Bytes, Object},
     error::{Error, Result, from_result},
     ffi,
-    screen::Selection,
+    selection::Selection,
     terminal::Terminal,
 };
 
@@ -69,7 +69,6 @@ impl<'t, 'alloc: 'cb, 'cb: 't> Formatter<'t, 'alloc, 'cb> {
         // Keep `selection` alive until after the C call; taking `&raw const s`
         // inside a match arm produces a dangling pointer once the arm exits.
         let selection: Option<ffi::Selection> = opts.selection.map(Into::into);
-
         let opts = ffi::FormatterTerminalOptions {
             emit: opts.format.into(),
             trim: opts.trim,
