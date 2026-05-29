@@ -66,15 +66,15 @@ impl<'t, 'alloc: 'cb, 'cb: 't> Formatter<'t, 'alloc, 'cb> {
         opts: FormatterOptions,
     ) -> Result<Self> {
         let mut raw: ffi::Formatter = std::ptr::null_mut();
-        // Keep `selection` alive until after the C call; taking `&raw const s`
-        // inside a match arm produces a dangling pointer once the arm exits.
-        let selection: Option<ffi::Selection> = opts.selection.map(Into::into);
         let opts = ffi::FormatterTerminalOptions {
             emit: opts.format.into(),
             trim: opts.trim,
             extra: opts.extra,
             unwrap: opts.unwrap,
-            selection: selection.as_ref().map_or(std::ptr::null(), |s| s as *const ffi::Selection),
+            selection: match opts.selection {
+                Some(s) => &s.inner,
+                None => std::ptr::null(),
+            },
             ..ffi::sized!(ffi::FormatterTerminalOptions)
         };
 
