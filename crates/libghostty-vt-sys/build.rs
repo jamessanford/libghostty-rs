@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const GHOSTTY_REPO: &str = "https://github.com/jamessanford/ghostty.git";
-const GHOSTTY_COMMIT: &str = "661d0ab514607a3b42a0871ff7dc14e968edf530";
+const GHOSTTY_COMMIT: &str = "dff46714555fea7bf53f37d352f7bd9ae24fed2d";
 
 /// Relative path from this crate's Cargo.toml to a local ghostty checkout.
 /// When this directory exists and contains build.zig, use it instead of
