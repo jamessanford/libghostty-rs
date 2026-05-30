@@ -66,15 +66,18 @@ impl<'t, 'alloc: 'cb, 'cb: 't> Formatter<'t, 'alloc, 'cb> {
         opts: FormatterOptions,
     ) -> Result<Self> {
         let mut raw: ffi::Formatter = std::ptr::null_mut();
+        // Keep the ffi::Selection alive until after the C call; taking `&s.inner`
+        // inside a match arm produces a dangling pointer once the `let opts`
+        // statement ends, before ghostty_formatter_terminal_new runs.
+        let selection: Option<ffi::Selection> = opts.selection.map(|s| s.inner);
         let opts = ffi::FormatterTerminalOptions {
             emit: opts.format.into(),
             trim: opts.trim,
             extra: opts.extra,
             unwrap: opts.unwrap,
-            selection: match opts.selection {
-                Some(s) => &s.inner,
-                None => std::ptr::null(),
-            },
+            selection: selection
+                .as_ref()
+                .map_or(std::ptr::null(), |s| s as *const ffi::Selection),
             ..ffi::sized!(ffi::FormatterTerminalOptions)
         };
 
@@ -182,4 +185,81 @@ pub enum Format {
     Vt = ffi::FormatterFormat::VT,
     /// HTML with inline styles.
     Html = ffi::FormatterFormat::HTML,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::selection::Selection;
+    use crate::terminal::{Options as TerminalOptions, Point, PointCoordinate, Terminal};
+
+    /// Regression test for a use-after-free of the selection pointer.
+    ///
+    /// `Formatter::new` must keep the `ffi::Selection` alive until after the C
+    /// call. A prior version stored `&s.inner` taken from a `match` arm, which
+    /// dangled once the `let opts = …;` statement ended — before
+    /// `ghostty_formatter_terminal_new` ran — so Ghostty read a freed selection
+    /// and segfaulted in the page iterator. Formatting must succeed and honor
+    /// the selection bounds.
+    ///
+    /// Only reliable under `--release`: in a debug build the freed stack slot
+    /// usually still holds the old (valid-looking) pointer bytes, so the buggy
+    /// version may not fault. Auto-ignored in debug builds; run with
+    /// `cargo test --release`.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "use-after-free only faults reliably in --release builds"
+    )]
+    fn formatter_with_selection_does_not_use_after_free() {
+        let mut terminal = Terminal::new(TerminalOptions {
+            cols: 80,
+            rows: 24,
+            max_scrollback: 1000,
+        })
+        .unwrap();
+        terminal.vt_write(b"Hello World");
+
+        let start = terminal
+            .grid_ref(Point::Active(PointCoordinate { x: 6, y: 0 }))
+            .unwrap();
+        let end = terminal
+            .grid_ref(Point::Active(PointCoordinate { x: 10, y: 0 }))
+            .unwrap();
+        let selection = Selection::new(start, end, false);
+
+        // Fully-sized extra (both the outer and nested `size` fields) so
+        // `terminal_new` accepts it and we exercise the selection path.
+        let extra = ffi::FormatterTerminalExtra {
+            size: std::mem::size_of::<ffi::FormatterTerminalExtra>(),
+            scrolling_region: false,
+            modes: false,
+            palette: false,
+            tabstops: false,
+            pwd: false,
+            keyboard: false,
+            screen: ffi::FormatterScreenExtra {
+                size: std::mem::size_of::<ffi::FormatterScreenExtra>(),
+                cursor: false,
+                style: false,
+                hyperlink: false,
+                protection: false,
+                kitty_keyboard: false,
+                charsets: false,
+                saved_cursor: false,
+            },
+        };
+
+        let mut fmt = Formatter::new(&terminal, FormatterOptions {
+            format: Format::Plain,
+            trim: true,
+            unwrap: false,
+            selection: Some(selection),
+            extra,
+        })
+        .unwrap();
+
+        let out = fmt.format_alloc(None).unwrap();
+        assert_eq!(&out[..], b"World");
+    }
 }
