@@ -301,6 +301,18 @@ impl<'alloc: 'cb, 'cb> Terminal<'alloc, 'cb> {
         unsafe { ffi::ghostty_terminal_vt_write(self.inner.as_raw(), data.as_ptr(), data.len()) }
     }
 
+    /// Returns whether the VT stream is at a clean boundary, i.e. the parser is
+    /// in the ground state and not mid multi-byte UTF-8 character. This is true
+    /// when the most recent [`Terminal::vt_write`] ended on a sequence boundary.
+    ///
+    /// Embedders that forward the raw byte stream can use this to avoid pinning
+    /// a snapshot (or emitting a full refresh) where a sequence is split across
+    /// `vt_write` calls, which would orphan the sequence's tail for any consumer
+    /// resuming from the snapshot.
+    pub fn vt_at_boundary(&self) -> bool {
+        unsafe { ffi::ghostty_terminal_vt_at_boundary(self.inner.as_raw()) }
+    }
+
     /// Resize the terminal to the given dimensions.
     ///
     /// Changes the number of columns and rows in the terminal. The primary

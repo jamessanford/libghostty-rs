@@ -1944,6 +1944,10 @@ unsafe extern "C" {
     pub fn ghostty_terminal_vt_write(terminal: Terminal, data: *const u8, len: usize);
 }
 unsafe extern "C" {
+    #[doc = " Returns whether the VT stream is at a clean boundary.\n\n Returns true if the terminal's VT parser is in the ground state and is\n not in the middle of decoding a multi-byte UTF-8 character, i.e. the most\n recent ghostty_terminal_vt_write() ended on a sequence boundary.\n\n Embedders that forward the raw byte stream to other consumers can use\n this to avoid pinning a snapshot (or emitting a full refresh) at a point\n where a sequence is split across vt_write calls, which would orphan the\n tail of the sequence for any consumer that resumes from the snapshot.\n\n"]
+    pub fn ghostty_terminal_vt_at_boundary(terminal: Terminal) -> bool;
+}
+unsafe extern "C" {
     #[doc = " Scroll the terminal viewport.\n\n Scrolls the terminal's viewport according to the given behavior.\n When using GHOSTTY_SCROLL_VIEWPORT_DELTA, set the delta field in\n the value union to specify the number of rows to scroll (negative\n for up, positive for down). For other behaviors, the value is ignored.\n\n"]
     pub fn ghostty_terminal_scroll_viewport(terminal: Terminal, behavior: TerminalScrollViewport);
 }
