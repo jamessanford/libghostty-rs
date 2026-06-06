@@ -238,6 +238,8 @@ mod tests {
             tabstops: false,
             pwd: false,
             keyboard: false,
+            title: false,
+            colors: false,
             screen: ffi::FormatterScreenExtra {
                 size: std::mem::size_of::<ffi::FormatterScreenExtra>(),
                 cursor: false,

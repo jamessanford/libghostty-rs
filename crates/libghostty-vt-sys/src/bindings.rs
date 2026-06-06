@@ -2066,6 +2066,10 @@ pub struct FormatterTerminalExtra {
     pub pwd: bool,
     #[doc = " Emit keyboard modes such as ModifyOtherKeys."]
     pub keyboard: bool,
+    #[doc = " Emit the window title using OSC 0 if one is set."]
+    pub title: bool,
+    #[doc = " Emit dynamic foreground/background/cursor color overrides (OSC 10/11/12)."]
+    pub colors: bool,
     #[doc = " Screen-level extras."]
     pub screen: FormatterScreenExtra,
 }
@@ -2088,6 +2092,10 @@ const _: () = {
         [::std::mem::offset_of!(FormatterTerminalExtra, pwd) - 12usize];
     ["Offset of field: FormatterTerminalExtra::keyboard"]
         [::std::mem::offset_of!(FormatterTerminalExtra, keyboard) - 13usize];
+    ["Offset of field: FormatterTerminalExtra::title"]
+        [::std::mem::offset_of!(FormatterTerminalExtra, title) - 14usize];
+    ["Offset of field: FormatterTerminalExtra::colors"]
+        [::std::mem::offset_of!(FormatterTerminalExtra, colors) - 15usize];
     ["Offset of field: FormatterTerminalExtra::screen"]
         [::std::mem::offset_of!(FormatterTerminalExtra, screen) - 16usize];
 };
